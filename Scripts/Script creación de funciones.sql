@@ -95,7 +95,8 @@ AS $$
            DATE_PART('year', AGE(p_fecha_consulta, p.fechaComienzo))::INTEGER
     FROM Artista ar
     JOIN Persona p ON p.idPersona = ar.idPersona
-    WHERE p.fechaComienzo < (p_fecha_consulta - INTERVAL '10 years')
+    WHERE p.fechaComienzo IS NOT NULL
+      AND p.fechaComienzo < (p_fecha_consulta - INTERVAL '10 years')
       AND NOT EXISTS (
             SELECT 1
             FROM Cover cv

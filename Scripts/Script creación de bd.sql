@@ -12,7 +12,7 @@ CREATE DOMAIN t_rol AS VARCHAR(30);
 CREATE DOMAIN t_fecha AS DATE;
 CREATE DOMAIN t_popularidad AS FLOAT CHECK (VALUE >= 0.0 AND VALUE <= 5.0);
 CREATE DOMAIN t_cantidad AS INTEGER CHECK (VALUE >= 0);
-CREATE DOMAIN t_paginas AS INTEGER CHECK (VALUE > 0);
+CREATE DOMAIN t_paginas AS INTEGER;
 CREATE DOMAIN t_numero_issue AS INTEGER CHECK (VALUE > 0);
 CREATE DOMAIN t_booleano AS BOOLEAN;
 
@@ -23,8 +23,8 @@ CREATE TABLE Persona (
     apellidos t_nombre_persona NOT NULL,
     alias t_nombre_persona NULL,
     fechaNacimiento t_fecha NOT NULL,
-    fechaComienzo t_fecha NOT NULL,
-    CONSTRAINT chk_persona_fechas CHECK (fechaComienzo > fechaNacimiento)
+    fechaComienzo t_fecha NULL DEFAULT NULL,
+    CONSTRAINT chk_persona_fechas CHECK (fechaComienzo IS NULL OR fechaComienzo > fechaNacimiento)
 );
 
 CREATE TABLE Artista (

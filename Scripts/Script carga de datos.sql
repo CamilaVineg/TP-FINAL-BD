@@ -1,25 +1,28 @@
 -- ============================================================================
 -- SCRIPT DE CARGA DE DATOS (PROPUESTA 6: COMICS ARCHIVE)
--- Descripción: Carga inicial de datos consistente con las reglas de negocio,
--- jerarquías temporales y cálculos de métricas.
+-- Descripción: Carga inicial de datos consistente con las reglas de negocio.
+-- - Todas las tuplas de Persona se cargan con fechaComienzo en NULL y se
+--   actualizan automáticamente al insertar sus Cómics (trg_actualizar_fecha_comienzo_autor).
+-- - Comic y Run se inicializan en 0.0 y 0 mediante triggers BEFORE INSERT y se
+--   actualizan automáticamente en cascada al insertar los Issues.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
 -- 1. Tabla: Persona (10 tuplas)
--- Nota: fechaComienzo coincide con la primera obra registrada en el sistema,
--- respetando una diferencia mayor a 18 años con fechaNacimiento.
+-- Nota: fechaComienzo se carga en NULL (además forzado por trg_set_fecha_comienzo_null)
+-- y se calcula automáticamente a partir del primer cómic registrado de cada autor.
 -- ----------------------------------------------------------------------------
 INSERT INTO Persona (idPersona, nombre, apellidos, alias, fechaNacimiento, fechaComienzo) VALUES
-(1, 'Stan', 'Lee', 'The Man', '1922-12-28', '1963-01-15'),
-(2, 'Jack', 'Kirby', 'The King', '1917-08-28', '1963-03-01'),
-(3, 'Steve', 'Ditko', NULL, '1927-11-02', '1963-01-15'),
-(4, 'Frank', 'Miller', NULL, '1957-01-27', '1979-03-01'),
-(5, 'Alan', 'Moore', 'Original Writer', '1953-11-18', '1986-06-01'),
-(6, 'Todd', 'McFarlane', NULL, '1961-03-16', '1992-03-15'),
-(7, 'Jim', 'Lee', NULL, '1964-08-11', '1991-08-01'),
-(8, 'Brian Michael', 'Bendis', NULL, '1967-08-18', '2000-01-05'),
-(9, 'Fiona', 'Staples', NULL, '1984-09-08', '2012-01-10'),
-(10, 'Chip', 'Zdarsky', 'Steve Murray', '1975-12-21', '2015-03-11');
+(1, 'Stan', 'Lee', 'The Man', '1922-12-28', NULL),
+(2, 'Jack', 'Kirby', 'The King', '1917-08-28', NULL),
+(3, 'Steve', 'Ditko', NULL, '1927-11-02', NULL),
+(4, 'Frank', 'Miller', NULL, '1957-01-27', NULL),
+(5, 'Alan', 'Moore', 'Original Writer', '1953-11-18', NULL),
+(6, 'Todd', 'McFarlane', NULL, '1961-03-16', NULL),
+(7, 'Jim', 'Lee', NULL, '1964-08-11', NULL),
+(8, 'Brian Michael', 'Bendis', NULL, '1967-08-18', NULL),
+(9, 'Fiona', 'Staples', NULL, '1984-09-08', NULL),
+(10, 'Chip', 'Zdarsky', 'Steve Murray', '1975-12-21', NULL);
 
 -- ----------------------------------------------------------------------------
 -- 2. Tabla: Artista (10 tuplas)
@@ -67,39 +70,47 @@ INSERT INTO Empresa (idEmpresa, nombre) VALUES
 (10, 'AfterShock Comics');
 
 -- ----------------------------------------------------------------------------
--- 5. Tabla: Comic (10 tuplas)
--- Nota: Comic 8, 9 y 10 inician con 0.0 y 0 ya que no poseen Runs con Issues asociados.
+-- 5. Tabla: Comic (13 tuplas)
+-- Nota: popularidad y ejemplaresVendidos se inicializan en 0.0 y 0 mediante
+-- trg_inicializar_metricas_comic, y cada inserción actualiza automáticamente
+-- Persona.fechaComienzo mediante trg_actualizar_fecha_comienzo_autor.
 -- ----------------------------------------------------------------------------
 INSERT INTO Comic (idComic, nombre, descripcion, fechaInicio, popularidad, ejemplaresVendidos, idEmpresa, idAutor) VALUES
-(1, 'The Amazing Spider-Man', 'Las aventuras del héroe arácnido Peter Parker', '1963-03-01', 4.8, 410000, 1, 1),
-(2, 'Batman: Year One', 'El origen definitivo del Caballero de la Noche en Gotham', '1986-02-01', 5.0, 200000, 2, 2),
-(3, 'Watchmen', 'Deconstrucción del mito del superhéroe', '1986-09-01', 5.0, 180000, 2, 3),
-(4, 'Spawn', 'Al Simmons regresa del infierno como engendro', '1992-05-01', 4.3, 160000, 3, 8),
-(5, 'Saga', 'Una épica de ópera espacial y fantasía', '2012-03-14', 4.8, 95000, 3, 10),
-(6, 'Daredevil', 'El hombre sin miedo combate el crimen en Hells Kitchen', '1964-04-01', 4.75, 215000, 1, 1),
-(7, 'X-Men', 'Los mutantes luchan por un mundo que los teme', '1963-09-01', 5.0, 800000, 1, 1),
+(1, 'The Amazing Spider-Man', 'Las aventuras del héroe arácnido Peter Parker', '1963-03-01', 0.0, 0, 1, 1),
+(2, 'Batman: Year One', 'El origen definitivo del Caballero de la Noche en Gotham', '1986-02-01', 0.0, 0, 2, 2),
+(3, 'Watchmen', 'Deconstrucción del mito del superhéroe', '1986-09-01', 0.0, 0, 2, 3),
+(4, 'Spawn', 'Al Simmons regresa del infierno como engendro', '1992-05-01', 0.0, 0, 3, 8),
+(5, 'Saga', 'Una épica de ópera espacial y fantasía', '2012-03-14', 0.0, 0, 3, 10),
+(6, 'Daredevil', 'El hombre sin miedo combate el crimen en Hells Kitchen', '1964-04-01', 0.0, 0, 1, 1),
+(7, 'X-Men', 'Los mutantes luchan por un mundo que los teme', '1963-09-01', 0.0, 0, 1, 1),
 (8, 'Hellboy', 'Un demonio investiga lo paranormal para el BPRD', '1993-08-01', 0.0, 0, 4, 2),
 (9, 'Powers', 'Detectives de homicidios investigan crímenes de superhéroes', '2000-04-01', 0.0, 0, 3, 4),
-(10, 'Howard the Duck', 'Las cómicas aventuras de un pato detective en la Tierra', '2015-03-11', 0.0, 0, 1, 5);
+(10, 'Howard the Duck', 'Las cómicas aventuras de un pato detective en la Tierra', '2015-03-11', 0.0, 0, 1, 5),
+(11, 'Captain America Comics', 'El supersoldado patriótico lucha por la libertad', '1941-03-01', 0.0, 0, 1, 6),
+(12, 'Doctor Strange', 'El Hechicero Supremo defiende la Tierra de amenazas místicas', '1963-07-01', 0.0, 0, 1, 7),
+(13, 'WildC.A.T.s', 'Equipo encubierto de héroes alienígenas en Image Comics', '1992-08-01', 0.0, 0, 3, 9);
 
 -- ----------------------------------------------------------------------------
 -- 6. Tabla: Run (10 tuplas)
--- Nota: Run 10 inicia en 0.0 y 0 al no poseer ningún Issue asignado.
+-- Nota: popularidad y ejemplaresVendidos se inicializan en 0.0 y 0 mediante
+-- trg_inicializar_metricas_run y se recalculan al cargarse los Issues.
 -- ----------------------------------------------------------------------------
 INSERT INTO Run (idRun, fechaComienzo, popularidad, ejemplaresVendidos, idComic) VALUES
-(1, '1963-03-01', 4.8, 270000, 1),
-(2, '1986-02-01', 5.0, 200000, 2),
-(3, '1986-09-01', 5.0, 180000, 3),
-(4, '1992-05-01', 4.3, 160000, 4),
-(5, '2012-03-14', 4.8, 95000, 5),
-(6, '1979-05-01', 4.9, 110000, 6),
-(7, '1991-10-01', 5.0, 800000, 7),
-(8, '2000-02-01', 4.8, 140000, 1),
-(9, '2019-02-01', 4.6, 105000, 6),
+(1, '1963-03-01', 0.0, 0, 1),
+(2, '1986-02-01', 0.0, 0, 2),
+(3, '1986-09-01', 0.0, 0, 3),
+(4, '1992-05-01', 0.0, 0, 4),
+(5, '2012-03-14', 0.0, 0, 5),
+(6, '1979-05-01', 0.0, 0, 6),
+(7, '1991-10-01', 0.0, 0, 7),
+(8, '2000-02-01', 0.0, 0, 1),
+(9, '2019-02-01', 0.0, 0, 6),
 (10, '1994-03-01', 0.0, 0, 8);
 
 -- ----------------------------------------------------------------------------
 -- 7. Tabla: Issue (10 tuplas)
+-- Nota: Al insertar cada Issue, trg_actualizar_ventas_run recalcula su Run y
+-- trg_actualizar_metricas_comic propaga en cascada los totales a Comic.
 -- ----------------------------------------------------------------------------
 INSERT INTO Issue (idIssue, numero, popularidad, ejemplaresVendidos, idRun) VALUES
 (1, 1, 4.9, 150000, 1),
